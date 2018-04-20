@@ -7,7 +7,7 @@ with open("targets.txt") as i:
 
 ipTargets = [ipTargets.strip() for x in content]
 
-UDP_PORT = 98765
+UDP_PORT = 5005
 COUNT = 0
 
 for target in ipTargets:
@@ -25,7 +25,10 @@ for target in ipTargets:
     #create a raw socket to read back the data
     try:
         inSock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
+        inSock.bind.((UDP_IP, UDP_PORT))
         inPacket = recv_sock.recv(1500)
+        print "revieved data:", data
+        inSock.close()
     except socket.error, msg:
         print("inSock error")
         sys.exit()
