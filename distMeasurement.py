@@ -1,6 +1,8 @@
 #kps59
 
 import socket
+import struct
+import select
 
 with open("targets.txt") as i:
     ipTargets = [line.split() for line in i]
@@ -19,19 +21,23 @@ for target in ipTargets:
         outSock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 64)
         outSock.sendto(PACKETDATA, (UDP_IP, UDP_PORT))
         outSock.close()
+        print("packet sent")
     except socket.error as x:
-        print("outSock error; " + x)
-        sys.exit()
+        print("socket error, on your side")
 
     #create a raw socket to read back the data
     try:
+        print("attempt reception")
         inSock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
-        inSock.bind((socket.gethostname(), 0))
+        inSock.settimeout(3)
         inPacket = inSock.recv(1500)
-        print("revieved data:", data)
+         
+        #print recieved data
+        print(inPacket)
+        print("revieved data:", chr(ord(inPacket[0])))
+
         inSock.close()
     except socket.error as x:
-        print("outSock error; " + x)
-        sys.exit()
+        print("socket error, probably timeout")
 
     COUNT += 1
