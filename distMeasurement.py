@@ -31,12 +31,38 @@ for target in ipTargets:
         inSock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
         inSock.settimeout(3)
         inPacket = inSock.recv(1500)
-         
+        
+        unStruct = struct.unpack("!H", inPacket[50:52])[0]
+
+        # this is a diagram of the packet we expect to recieve
+        # note that 69 is 0100101 or nibbles 4 and 5 for version and params respectively
+        # and we expect a code 3 port unreachable for the icmp message
+        #        0       1       2       3
+        #     _______________________________    
+        # 0  | 69    | dscp  | total length  |  ip
+        # 4  | id            | flags | frag  |
+        # 8  | ttl   | proto | header check  |
+        # 12 | source ip address             |
+        # 16 | destination ip address        |
+        # 20 | 3     | 3     | checksum      |  icmp
+        # 24 | unused        | next-hop mtu  |
+        # 28 | 69    | dscp  | total length  |  ip
+        # 32 | id            | flags | frag  |
+        # 36 | ttl   | proto | header check  |
+        # 40 | source ip address             |
+        # 44 | destination ip address        |
+        # 48 | source port   | dest port     |  udp
+        # 52 | length        | checksum      |
+        
+
+
+
         #print recieved data
         print(inPacket)
-        print("revieved data:", chr(ord(inPacket[0])))
-
+        print("revieved data:", unStruct)
+        print("test:", inPacket[26])
         inSock.close()
+
     except socket.error as x:
         print("socket error, probably timeout")
 
