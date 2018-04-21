@@ -3,6 +3,8 @@
 import socket
 import struct
 import select
+import time
+import sys
 
 with open("targets.txt") as i:
     ipTargets = [line.split() for line in i]
@@ -10,6 +12,11 @@ with open("targets.txt") as i:
 UDP_PORT = 5005
 COUNT = 0
 
+rttList = list()    # list to hold the amount of time it takes between sending and recieving the packet
+hopList = list()    # list to hold the amount of hops
+amtList = list()    # list to hold the amount of bytes 
+
+# adds an element to each fooList on each pass, will be kept in the order of ipTargets
 for target in ipTargets:
     print(target[0])
     UDP_IP = socket.gethostbyname(target[0])
@@ -19,6 +26,7 @@ for target in ipTargets:
     try:
         outSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         outSock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 64)
+        rtt = time.time()
         outSock.sendto(PACKETDATA, (UDP_IP, UDP_PORT))
         outSock.close()
         print("packet sent")
@@ -30,9 +38,18 @@ for target in ipTargets:
         print("attempt reception")
         inSock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
         inSock.settimeout(3)
+
+        # get packet and clock it into rttList
         inPacket = inSock.recv(1500)
-        
-        unStruct = struct.unpack("!H", inPacket[50:52])[0]
+        rtu = time.time()
+        rttList.append(rtt - rtu)
+        print(rtt - rtu)
+       
+        print()
+
+
+        #unStruct = struct.unpack("!H", inPacket[36:38])[0]
+        unStruct = inPacket[36]
 
         # this is a diagram of the packet we expect to recieve
         # note that 69 is 0100101 or nibbles 4 and 5 for version and params respectively
@@ -54,10 +71,13 @@ for target in ipTargets:
         # 48 | source port   | dest port     |  udp
         # 52 | length        | checksum      |
         
+        # append hopList with amount of hops
+        hopList.append(64 - unStruct)
 
+        # append amtList with the amount of extranious octothorpes missing
+        amtList.append(0 - (sys.getsizeof(inPacket) - (1556)))
 
-
-        #print recieved data
+        # print recieved data
         print(inPacket)
         print("revieved data:", unStruct)
         print("test:", inPacket[26])
