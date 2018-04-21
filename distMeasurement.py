@@ -9,7 +9,7 @@ import sys
 with open("targets.txt") as i:
     ipTargets = [line.split() for line in i]
 
-UDP_PORT = 5005
+UDP_PORT = 20
 COUNT = 0
 
 rttList = list()    # list to hold the amount of time it takes between sending and recieving the packet
@@ -24,32 +24,36 @@ for target in ipTargets:
     PACKETDATA = PACKETDATA.encode("utf8")
 
     try:
+        # create the sockets for the ping
         outSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        outSock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 64)
-        rtt = time.time()
+        inSock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
+
+        # set the ttl to something we know
+        ttl = 36
+        outSock.setsockopt(socket.SOL_IP, socket.IP_TTL, 36)
+        
+        #bind the incoming port and set timeout
+        inSock.bind(("", UDP_PORT))
+        inSock.settimeout(3)
+
+        #initiate sending of udp packet
         outSock.sendto(PACKETDATA, (UDP_IP, UDP_PORT))
+        rtt = time.time()
+
+        #revieve packet (icm message expected)
+        inPacket, ipResp = inSock.recvfrom(1550)
+        rtu = time.time()
+        
         outSock.close()
         print("packet sent")
     except socket.error as x:
-        print("socket error, on your side")
+        print("socket error")
 
-    #create a raw socket to read back the data
-    try:
-        print("attempt reception")
-        inSock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
-        inSock.settimeout(3)
-
-        # get packet and clock it into rttList
-        inPacket = inSock.recv(1500)
-        rtu = time.time()
-        rttList.append(rtt - rtu)
-        print(rtt - rtu)
+    rttList.append(rtt - rtu)
+    print(rtt - rtu)
        
-        print()
-
-
-        #unStruct = struct.unpack("!H", inPacket[36:38])[0]
-        unStruct = inPacket[36]
+    #unStruct = struct.unpack("!H", inPacket[50:52])[0]
+    unStruct = inPacket[36]
 
         # this is a diagram of the packet we expect to recieve
         # note that 69 is 0100101 or nibbles 4 and 5 for version and params respectively
@@ -71,19 +75,16 @@ for target in ipTargets:
         # 48 | source port   | dest port     |  udp
         # 52 | length        | checksum      |
         
-        # append hopList with amount of hops
-        hopList.append(64 - unStruct)
+    # append hopList with amount of hops
+    hopList.append(64 - unStruct)
 
-        # append amtList with the amount of extranious octothorpes missing
-        amtList.append(0 - (sys.getsizeof(inPacket) - (1556)))
+    # append amtList with the amount of extranious octothorpes missing
+    amtList.append(0 - (sys.getsizeof(inPacket) - (1556)))
 
-        # print recieved data
-        print(inPacket)
-        print("revieved data:", unStruct)
-        print("test:", inPacket[26])
-        inSock.close()
-
-    except socket.error as x:
-        print("socket error, probably timeout")
+    # print recieved data
+    print(inPacket)
+    print("revieved data:", unStruct)
+    print("test:", inPacket[26])
+    inSock.close()
 
     COUNT += 1
