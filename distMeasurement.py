@@ -34,7 +34,7 @@ for target in ipTargets:
         
         #bind the incoming port and set timeout
         inSock.bind(("", UDP_PORT))
-        inSock.settimeout(3)
+        inSock.settimeout(4)
 
         #initiate sending of udp packet
         outSock.sendto(PACKETDATA, (UDP_IP, UDP_PORT))
@@ -46,14 +46,14 @@ for target in ipTargets:
         
         outSock.close()
         print("packet sent")
-    except socket.error as x:
-        print("socket error")
 
-    rttList.append(rtt - rtu)
-    print(rtt - rtu)
+        timeMil = 1000 * (rtu - rtt)
+        
+        rttList.append(timeMil)
+        print(timeMil)
        
-    #unStruct = struct.unpack("!H", inPacket[50:52])[0]
-    unStruct = inPacket[36]
+        # unpack struct elements as needed based on below chart
+        ttlIn = inPacket[36] 
 
         # this is a diagram of the packet we expect to recieve
         # note that 69 is 0100101 or nibbles 4 and 5 for version and params respectively
@@ -74,17 +74,22 @@ for target in ipTargets:
         # 44 | destination ip address        |
         # 48 | source port   | dest port     |  udp
         # 52 | length        | checksum      |
-        
-    # append hopList with amount of hops
-    hopList.append(64 - unStruct)
+       
+        print(ipResp)
+        # append hopList with amount of hops
+        #hopList.append(ttl - (ttlIn + 1))
 
-    # append amtList with the amount of extranious octothorpes missing
-    amtList.append(0 - (sys.getsizeof(inPacket) - (1556)))
+        # append amtList with the amount of extranious octothorpes missing
+        amtList.append(0 - (sys.getsizeof(inPacket) - (1556)))
 
-    # print recieved data
-    print(inPacket)
-    print("revieved data:", unStruct)
-    print("test:", inPacket[26])
-    inSock.close()
+        # print recieved data
+        print(inPacket)
+        print("revieved data:", ttlIn)
+        print("test:", inPacket[26])
+        inSock.close()
+    
+    except socket.error as x:
+        print("socket error")
+        exit
 
     COUNT += 1
