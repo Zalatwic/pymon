@@ -20,7 +20,7 @@ amtList = list()    # list to hold the amount of bytes
 for target in ipTargets:
     print(target[0])
     UDP_IP = socket.gethostbyname(target[0])
-    PACKETDATA = '#' + format(COUNT, '04d') +  '; hello, this is a test from the case institute of technology, if you see this please report it to kps59@case.edu. this is not harmful and can be ignored. the purpose of this test is to verify that packets being returned truncate the payload from unexpected udp traffic. this is not the case with many different router configurations. if you would like to know more please contact the above with any inquiries. ################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################'
+    PACKETDATA = '#' + format(COUNT, '02d') +  '; hello, this is a test from the case institute of technology, if you see this please report it to kps59@case.edu. this is not harmful and can be ignored. the purpose of this test is to verify that packets being returned truncate the payload from unexpected udp traffic. this is not the case with many different router configurations. if you would like to know more please contact the above with any inquiries. ##################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################'
     PACKETDATA = PACKETDATA.encode("utf8")
 
     try:
@@ -32,15 +32,15 @@ for target in ipTargets:
         ttl = 36
         outSock.setsockopt(socket.SOL_IP, socket.IP_TTL, 36)
         
-        #bind the incoming port and set timeout
+        # bind the incoming port and set timeout
         inSock.bind(("", UDP_PORT))
         inSock.settimeout(4)
 
-        #initiate sending of udp packet
+        # initiate sending of udp packet
         outSock.sendto(PACKETDATA, (UDP_IP, UDP_PORT))
         rtt = time.time()
 
-        #revieve packet (icm message expected)
+        # revieve packet (icm message expected)
         inPacket, ipResp = inSock.recvfrom(1550)
         rtu = time.time()
         
@@ -49,11 +49,21 @@ for target in ipTargets:
 
         timeMil = 1000 * (rtu - rtt)
         
-        rttList.append(timeMil)
-        print(timeMil)
+        # get packet number from two bytes from the packet which contain COUNT of sent
+        packetNumber = inPacket[57]* 10 + inPacket[58] - 528
+
+        # check that the packet is coming from the correct destination, if not set values to -1
+        if COUNT != packetNumber: 
+            rttList.append(-1)
+            hopList.append(-1)
+            amtList.append(-1)
+
+        else:
+            rttList.append(timeMil)
+            print(timeMil)
        
-        # unpack struct elements as needed based on below chart
-        ttlIn = inPacket[36] 
+            # unpack struct elements as needed based on below chart
+            ttlIn = inPacket[36] 
 
         # this is a diagram of the packet we expect to recieve
         # note that 69 is 0100101 or nibbles 4 and 5 for version and params respectively
@@ -75,21 +85,25 @@ for target in ipTargets:
         # 48 | source port   | dest port     |  udp
         # 52 | length        | checksum      |
        
-        print(ipResp)
-        # append hopList with amount of hops
-        #hopList.append(ttl - (ttlIn + 1))
+            print(ipResp)
+            # append hopList with amount of hops
+            hopList.append(ttl - ttlIn)
 
-        # append amtList with the amount of extranious octothorpes missing
-        amtList.append(0 - (sys.getsizeof(inPacket) - (1556)))
+            # append amtList with the amount of extranious octothorpes missing
+            amtList.append(0 - (sys.getsizeof(inPacket) - (1556)))
 
-        # print recieved data
-        print(inPacket)
-        print("revieved data:", ttlIn)
-        print("test:", inPacket[26])
-        inSock.close()
+            # print recieved data
+            inSock.close()
     
     except socket.error as x:
         print("socket error")
+        rttList.append(-1)
+        hopList.append(-1)
+        amtList.append(-1)
         exit
 
     COUNT += 1
+
+print(hopList)
+print(rttList)
+print(amtList)
