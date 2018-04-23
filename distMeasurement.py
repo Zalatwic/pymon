@@ -50,7 +50,7 @@ for target in ipTargets:
         timeMil = 1000 * (rtu - rtt)
         
         # get packet number from two bytes from the packet which contain COUNT of sent
-        packetNumber = inPacket[57]* 10 + inPacket[58] - 528
+        packetNumber = (int)(inPacket[57]) * 10 + (int)(inPacket[58]) - 528
 
         # check that the packet is coming from the correct destination, if not set values to -1
         if COUNT != packetNumber: 
@@ -101,6 +101,9 @@ for target in ipTargets:
         hopList.append(-1)
         amtList.append(-1)
         exit
+    except IndexError as x:
+        print("packet shorter than expected")
+        continue
 
     COUNT += 1
 
