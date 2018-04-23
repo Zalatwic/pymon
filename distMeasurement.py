@@ -14,7 +14,8 @@ COUNT = 0
 
 rttList = list()    # list to hold the amount of time it takes between sending and recieving the packet
 hopList = list()    # list to hold the amount of hops
-amtList = list()    # list to hold the amount of bytes 
+amtList = list()    # list to hold the amount of bytes
+respUrl = list()    # list to hold origin of responce urls
 
 # adds an element to each fooList on each pass, will be kept in the order of ipTargets
 for target in ipTargets:
@@ -48,22 +49,24 @@ for target in ipTargets:
         print("packet sent")
 
         timeMil = 1000 * (rtu - rtt)
-        
-        # get packet number from two bytes from the packet which contain COUNT of sent
+       
         packetNumber = (int)(inPacket[57]) * 10 + (int)(inPacket[58]) - 528
 
+        ttlIn = inPacket[36]
+
+        # idk why but the server and pyrope disagree on what type inPacket[36] is
+        if isinstance(inPacket[36], str):
+            ttlIn = ord(inPacket[36])
+        
         # check that the packet is coming from the correct destination, if not set values to -1
         if COUNT != packetNumber: 
             rttList.append(-1)
             hopList.append(-1)
             amtList.append(-1)
+            respUrl.append(-1)
 
         else:
             rttList.append(timeMil)
-            print(timeMil)
-       
-            # unpack struct elements as needed based on below chart
-            ttlIn = inPacket[36] 
 
         # this is a diagram of the packet we expect to recieve
         # note that 69 is 0100101 or nibbles 4 and 5 for version and params respectively
@@ -85,7 +88,9 @@ for target in ipTargets:
         # 48 | source port   | dest port     |  udp
         # 52 | length        | checksum      |
        
-            print(ipResp)
+            # ammend url list with responce url
+            respUrl.append(ipResp[0])
+
             # append hopList with amount of hops
             hopList.append(ttl - ttlIn)
 
@@ -100,6 +105,7 @@ for target in ipTargets:
         rttList.append(-1)
         hopList.append(-1)
         amtList.append(-1)
+        respUrl.append(-1)
         exit
     except IndexError as x:
         print("packet shorter than expected")
