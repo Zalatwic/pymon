@@ -1,15 +1,19 @@
 #kps59
 
+import numpy as np
+import matplotlib.colors as mcol
+import matplotlib.patches as mpatch
+import matplotlib.pyplot as pyp
 import socket
 import struct
 import select
 import time
 import sys
 
-with open("targets.txt") as i:
+with open("target.txt") as i:
     ipTargets = [line.split() for line in i]
 
-UDP_PORT = 20
+UDP_PORT = 33444
 COUNT = 0
 
 rttList = list()    # list to hold the amount of time it takes between sending and recieving the packet
@@ -21,7 +25,7 @@ respUrl = list()    # list to hold origin of responce urls
 for target in ipTargets:
     print(target[0])
     UDP_IP = socket.gethostbyname(target[0])
-    PACKETDATA = '#' + format(COUNT, '02d') +  '; hello, this is a test from the case institute of technology, if you see this please report it to kps59@case.edu. this is not harmful and can be ignored. the purpose of this test is to verify that packets being returned truncate the payload from unexpected udp traffic. this is not the case with many different router configurations. if you would like to know more please contact the above with any inquiries. ##################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################'
+    PACKETDATA = '#' + '; hello, this is a test from the case institute of technology, if you see this please report it to kps59@case.edu. this is not harmful and can be ignored. the purpose of this test is to verify that packets being returned truncate the payload from unexpected udp traffic. this is not the case with many different router configurations. if you would like to know more please contact the above with any inquiries. ####################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################'
     PACKETDATA = PACKETDATA.encode("utf8")
 
     try:
@@ -30,19 +34,19 @@ for target in ipTargets:
         inSock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
 
         # set the ttl to something we know
-        ttl = 36
-        outSock.setsockopt(socket.SOL_IP, socket.IP_TTL, 36)
+        ttl = 64
+        outSock.setsockopt(socket.SOL_IP, socket.IP_TTL, ttl)
         
         # bind the incoming port and set timeout
         inSock.bind(("", UDP_PORT))
-        inSock.settimeout(4)
+        inSock.settimeout(2)
 
         # initiate sending of udp packet
         outSock.sendto(PACKETDATA, (UDP_IP, UDP_PORT))
         rtt = time.time()
 
         # revieve packet (icm message expected)
-        inPacket, ipResp = inSock.recvfrom(1550)
+        inPacket, ipResp = inSock.recvfrom(1500)
         rtu = time.time()
         
         outSock.close()
@@ -50,8 +54,6 @@ for target in ipTargets:
 
         timeMil = 1000 * (rtu - rtt)
        
-        packetNumber = (int)(inPacket[57]) * 10 + (int)(inPacket[58]) - 528
-
         ttlIn = inPacket[36]
 
         # idk why but the server and pyrope disagree on what type inPacket[36] is
@@ -59,7 +61,7 @@ for target in ipTargets:
             ttlIn = ord(inPacket[36])
         
         # check that the packet is coming from the correct destination, if not set values to -1
-        if COUNT != packetNumber: 
+        if UDP_IP != ipResp[0]:
             rttList.append(-1)
             hopList.append(-1)
             amtList.append(-1)
@@ -95,7 +97,7 @@ for target in ipTargets:
             hopList.append(ttl - ttlIn)
 
             # append amtList with the amount of extranious octothorpes missing
-            amtList.append(0 - (sys.getsizeof(inPacket) - (1556)))
+            amtList.append(sys.getsizeof(inPacket))
 
             # print recieved data
             inSock.close()
@@ -116,3 +118,37 @@ for target in ipTargets:
 print(hopList)
 print(rttList)
 print(amtList)
+
+# generate a grap
+amtNp = np.array(amtList)
+colorList = list()
+
+for t in range(len(amtList)):
+    if(amtList[t] > 750):
+        colorList.append([amtList[t] / 1560, amtList[t] / 1920, amtList[t] / 1600])
+    elif(amtList[t] > 500):
+        colorList.append([amtList[t] / 840, amtList[t] / 920, amtList[t] / 770])
+    elif(amtList[t] > 330):
+        colorList.append([amtList[t] / 920, amtList[t] / 1920, amtList[t] / 600])
+    elif(amtList[t] > 200):
+        colorList.append([amtList[t] / 360, amtList[t] / 780, amtList[t] / 1600])
+    elif(amtList[t] > 100):
+        colorList.append([amtList[t] / 1560, amtList[t] / 330, amtList[t] / 420])
+    else:
+        colorList.append([amtList[t] / 156, amtList[t] / 1920, amtList[t] / 600])
+
+pyp.scatter(hopList, rttList, c = colorList, label = amtList)
+
+h = list()
+for g in np.unique(amtNp):
+    h.append(mpatch.Patch(color = colorList[amtList.index(g)], label = g))
+
+pyp.legend(loc = 'upper left', handles = h)
+
+pyp.xlabel("Hops to destination server")
+pyp.ylabel("RTT (s/1000)")
+pyp.title("RTT vs. Hop time")
+
+pyp.savefig('outputgraph.png')
+pyp.savefig('outputgraph.pdf')
+pyp.show()
