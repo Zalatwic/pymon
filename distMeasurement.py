@@ -39,7 +39,7 @@ for target in ipTargets:
         
         # bind the incoming port and set timeout
         inSock.bind(("", UDP_PORT))
-        inSock.settimeout(2)
+        inSock.settimeout(1)
 
         # initiate sending of udp packet
         outSock.sendto(PACKETDATA, (UDP_IP, UDP_PORT))
@@ -62,10 +62,7 @@ for target in ipTargets:
         
         # check that the packet is coming from the correct destination, if not set values to -1
         if UDP_IP != ipResp[0]:
-            rttList.append(-1)
-            hopList.append(-1)
-            amtList.append(-1)
-            respUrl.append(-1)
+           print("incorrect pairing ip") 
 
         else:
             rttList.append(timeMil)
@@ -104,17 +101,9 @@ for target in ipTargets:
     
     except socket.error as x:
         print("socket error")
-        rttList.append(-1)
-        hopList.append(-1)
-        amtList.append(-1)
-        respUrl.append(-1)
         exit
     except socket.gaierror as x:
         print("dns error")
-        rttList.append(-1)
-        hopList.append(-1)
-        amtList.append(-1)
-        respUrl.append(-1)
         exit
 
     except IndexError as x:
