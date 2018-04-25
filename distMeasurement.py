@@ -10,7 +10,7 @@ import select
 import time
 import sys
 
-with open("targetlong.txt") as i:
+with open("targets.txt") as i:
     ipTargets = [line.split() for line in i]
 
 UDP_PORT = 33444
@@ -23,12 +23,12 @@ respUrl = list()    # list to hold origin of responce urls
 
 # adds an element to each fooList on each pass, will be kept in the order of ipTargets
 for target in ipTargets:
-    print(target[0])
-    UDP_IP = socket.gethostbyname(target[0])
-    PACKETDATA = '#' + '; hello, this is a test from the case institute of technology, if you see this please report it to kps59@case.edu. this is not harmful and can be ignored. the purpose of this test is to verify that packets being returned truncate the payload from unexpected udp traffic. this is not the case with many different router configurations. if you would like to know more please contact the above with any inquiries. ####################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################'
-    PACKETDATA = PACKETDATA.encode("utf8")
-
     try:
+        print(target[0])
+        UDP_IP = socket.gethostbyname(target[0])
+        PACKETDATA = '#' + '; hello, this is a test from the case institute of technology, if you see this please report it to kps59@case.edu. this is not harmful and can be ignored. the purpose of this test is to verify that packets being returned truncate the payload from unexpected udp traffic. this is not the case with many different router configurations. if you would like to know more please contact the above with any inquiries. ####################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################'
+        PACKETDATA = PACKETDATA.encode("utf8")
+
         # create the sockets for the ping
         outSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         inSock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
