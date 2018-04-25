@@ -10,7 +10,7 @@ import select
 import time
 import sys
 
-with open("target.txt") as i:
+with open("targetlong.txt") as i:
     ipTargets = [line.split() for line in i]
 
 UDP_PORT = 33444
@@ -109,6 +109,14 @@ for target in ipTargets:
         amtList.append(-1)
         respUrl.append(-1)
         exit
+    except socket.gaierror as x:
+        print("dns error")
+        rttList.append(-1)
+        hopList.append(-1)
+        amtList.append(-1)
+        respUrl.append(-1)
+        exit
+
     except IndexError as x:
         print("packet shorter than expected")
         continue
